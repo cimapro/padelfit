@@ -889,15 +889,22 @@
     document.getElementById('modal-overlay').style.display = 'none';
     document.body.style.overflow = '';
   }
-  document.getElementById('modal-overlay').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
+  document.addEventListener('DOMContentLoaded', function() {
+    var overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+      overlay.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+    }
   });
 
   const MP_LINKS = {
-    basico:  'https://mpago.la/1tz1JFZ',
-    premium: 'https://mpago.la/2Fu8FVe',
-    elite:   'https://mpago.la/23JGSwC'
+    basico:  'https://mpago.la/2Yf7wbi',
+    premium: 'https://mpago.la/2Y5ZxkR',
+    elite:   'https://mpago.la/2ad8zaD'
   };
+
+  const SITE_URL = 'https://holowell.com.ar';
 
   const PLAN_NAMES = {
     basico: 'Básico — $8.990',
@@ -937,11 +944,14 @@
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const nombre = document.getElementById('nombre').value.trim();
     const email = document.getElementById('email').value.trim();
     const edad = document.getElementById('edad').value.trim();
     const peso = document.getElementById('peso').value.trim();
+    const altura = document.getElementById('altura').value.trim();
+    const padel = document.getElementById('padel-freq').value;
+    const infoExtra = document.getElementById('info-extra').value.trim();
 
     if (!nombre || !email || !edad || !peso) {
       alert('Por favor completá al menos nombre, email, edad y peso antes de continuar.');
@@ -952,15 +962,43 @@
       return;
     }
 
+    const objetivo = document.querySelector('.chip-group .chip.active')?.textContent || 'No especificado';
+    const dias = Array.from(document.querySelectorAll('.day-chip.active')).map(c => c.textContent).join(', ') || 'No especificado';
+    const lesiones = Array.from(document.querySelectorAll('.chip.active')).filter(c => !c.classList.contains('day-chip') && c.closest('.chip-group') !== document.querySelector('.chip-group')).map(c => c.textContent).join(', ') || 'Ninguna';
+
     const btn = document.querySelector('.btn-submit');
     btn.disabled = true;
-    btn.textContent = 'Redirigiendo a MercadoPago...';
+    btn.textContent = 'Enviando datos...';
 
+    try {
+      await fetch('https://formspree.io/f/xjgzgepe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          _subject: `🎾 Nuevo pedido PadelFit — ${PLAN_NAMES[selectedPlan]} — ${nombre}`,
+          nombre,
+          email,
+          edad,
+          peso,
+          altura: altura || 'No especificado',
+          padel_por_semana: padel || 'No especificado',
+          objetivo,
+          dias_disponibles: dias,
+          lesiones,
+          plan_elegido: PLAN_NAMES[selectedPlan],
+          info_extra: infoExtra || 'Ninguna'
+        })
+      });
+    } catch(e) {
+      console.error('Formspree error:', e);
+    }
+
+    btn.textContent = 'Redirigiendo a MercadoPago...';
     setTimeout(() => {
       window.location.href = MP_LINKS[selectedPlan];
       btn.disabled = false;
       btn.textContent = 'Pagar y obtener mi plan →';
-    }, 800);
+    }, 600);
   }
 </script>
 
