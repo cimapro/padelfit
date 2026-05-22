@@ -419,6 +419,31 @@
   .footer-links a { font-size: 0.8rem; color: rgba(245,242,235,0.45); text-decoration: none; transition: color .2s; }
   .footer-links a:hover { color: var(--white); }
 
+  /* PAYMENT SUCCESS BANNER */
+  .payment-banner {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 200;
+    background: var(--green);
+    color: var(--white);
+    padding: 0.9rem 4rem;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(45,90,39,0.4);
+  }
+  .payment-banner.visible { display: block; animation: slideDown .4s ease; }
+  @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+  .payment-banner p { font-size: 0.9rem; font-weight: 500; line-height: 1.5; }
+  .payment-banner p strong { font-weight: 700; }
+  .payment-banner-close {
+    position: absolute; right: 1.5rem; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.25); border: none; color: var(--white);
+    font-size: 1rem; cursor: pointer; border-radius: 50%;
+    width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .payment-banner-close:hover { background: rgba(255,255,255,0.4); }
+
   /* ANIMATIONS */
   @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
   .hero-tag { animation: fadeUp .5s ease both; }
@@ -449,6 +474,13 @@
 </style>
 </head>
 <body>
+
+<!-- BANNER DE PAGO EXITOSO (se muestra al volver desde MercadoPago) -->
+<div class="payment-banner" id="payment-banner">
+  <p>✅ <strong>¡Pago recibido!</strong> Tu plan personalizado está siendo preparado. En los próximos minutos te llegará por email en formato HTML, listo para abrirlo desde tu celular. 📱</p>
+  <button class="payment-banner-close" onclick="document.getElementById('payment-banner').classList.remove('visible')" aria-label="Cerrar">×</button>
+</div>
+
 
 <!-- NAV -->
 <nav>
@@ -717,8 +749,8 @@
     </div>
     <div class="success-overlay" id="success-state">
       <div class="success-icon">✓</div>
-      <h3>¡Todo listo!</h3>
-      <p>Recibimos tu pedido. En las próximas 48 hs te enviamos el plan completo a tu email.</p>
+      <h3>¡Pago confirmado!</h3>
+      <p>Tu plan personalizado está siendo preparado. En los próximos minutos te llegará por email en formato HTML — podés abrirlo directo desde tu celular con toda comodidad. 📱</p>
     </div>
   </div>
 </section>
@@ -1000,6 +1032,41 @@
       btn.textContent = 'Pagar y obtener mi plan →';
     }, 600);
   }
+
+  // Detectar retorno desde MercadoPago y mostrar confirmación
+  (function detectMPReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('status') || params.get('collection_status');
+
+    if (status === 'approved') {
+      // Mostrar banner superior
+      const banner = document.getElementById('payment-banner');
+      if (banner) {
+        banner.classList.add('visible');
+        // Ajustar la nav para que no tape el banner
+        setTimeout(function() {
+          const bannerH = banner.offsetHeight;
+          const nav = document.querySelector('nav');
+          if (nav) nav.style.top = bannerH + 'px';
+        }, 50);
+      }
+
+      // Mostrar estado de éxito en el formulario
+      const formContent = document.getElementById('form-content');
+      const successState = document.getElementById('success-state');
+      if (formContent) formContent.style.display = 'none';
+      if (successState) successState.style.display = 'flex';
+
+      // Hacer scroll hacia la sección del formulario
+      setTimeout(function() {
+        const section = document.getElementById('obtener-plan');
+        if (section) section.scrollIntoView({ behavior: 'smooth' });
+      }, 500);
+
+      // Limpiar los parámetros de la URL sin recargar la página
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  })();
 </script>
 
 </body>
